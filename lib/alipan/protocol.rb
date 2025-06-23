@@ -45,7 +45,25 @@ module Alipan
 			body = JSON.parse(r.body)
 
 			objects = body[:items.to_s].map do |item|
-				Object.new(item, self)
+				Object.new(
+				{
+					:drive_id => item.fetch(:drive_id.to_s),
+					:file_id => item.fetch(:file_id.to_s),
+					:parent_file_id => item.fetch(:parent_file_id.to_s),
+					:name => item.fetch(:name.to_s),
+					:size => item.fetch(:size.to_s),
+					:file_extension => item.fetch(:file_extension.to_s),
+					:content_hash => item.fetch(:content_hash.to_s),
+					:category => item.fetch(:category.to_s),
+					:type => item.fetch(:type.to_s),
+					:thumbnail => item.fetch(:thumbnail.to_s),
+					:url => item.fetch(:url.to_s),
+					:created_at => item.fetch(:created_at.to_s),
+					:updated_at => item.fetch(:updated_at.to_s),
+					:play_cursor => item.fetch(:play_cursor.to_s),
+					:video_media_metadata => item.fetch(:video_media_metadata.to_s),
+					:video_preview_metadata => item.fetch(:video_preview_metadata.to_s)
+				}, self)
 			end
 
 			more = {

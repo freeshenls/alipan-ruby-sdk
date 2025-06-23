@@ -64,6 +64,7 @@ module Alipan
       )
       response = request.execute do |resp, &blk|
         if resp.code >= 300
+          e = RuntimeError.new JSON.parse(resp.body)
           logger.error(e.to_s)
           raise e
         else
