@@ -4,17 +4,15 @@
 
 ## 关于
 
-阿里云盘SDK, 方便Ruby客户端程序调用
+阿里云盘SDK  方便Ruby客户端程序调用
 
 ## 快速开始
 
 ### 鉴权配置
 
-登录官网[阿里云盘开发者门户](https://www.alipan.com/developer/f)
+登录官网[阿里云盘开发者门户](https://www.alipan.com/developer/f)  按照开发文档获取access_token
 
-按照开发文档获取access_token
-
-### 安装Aplipan SDK for Ruby
+### 安装Alipan SDK for Ruby
 
 ```bash
 gem install alipan-sdk
