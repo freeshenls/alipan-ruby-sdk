@@ -13,5 +13,23 @@ module Alipan
 		def list_objects(opts = {})
 			Iterator::Objects.new(@protocol, resource_drive_id, 'root', opts).to_enum
 		end
+
+		def get_object(key, opts = {}, &block)
+			obj = nil
+			file = opts[:file]
+			if file
+				File.open(File.expand_path(file), 'wb') do |f|
+					obj = @protocol.get_object(resource_drive_id, key, opts) do |chunk|
+						f.write(chunk)
+					end
+				end
+			elsif block
+				obj = @protocol.get_object(resource_drive_id, key, opts, &block)
+			else
+				obj = @protocol.get_object(resource_drive_id, key, opts)
+			end
+
+			obj
+		end
 	end
 end

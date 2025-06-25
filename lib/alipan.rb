@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'pry'
 require_relative "alipan/common"
 require_relative "alipan/config"
 require_relative "alipan/client"
