@@ -66,14 +66,11 @@ module Alipan
         :open_timeout => @config.open_timeout  || OPEN_TIMEOUT,
         :read_timeout => @config.read_timeout || READ_TIMEOUT
       )
-      response = request.execute do |resp, &blk|
-        if resp.code >= 300
-          e = RuntimeError.new JSON.parse(resp.body)
-          logger.error(e.to_s)
-          raise e
-        else
-          resp.return!(&blk)
-        end
+      begin
+        response = request.execute 
+      rescue RestClient::ExceptionWithResponse => e
+        response = e.response
+        response = RestClient::Response.create(response.body, Net::HTTPResponse.new('1.1', 200, 'OK'), request)
       end
 
       unless response.is_a?(RestClient::Response)
@@ -87,4 +84,14 @@ module Alipan
       response
     end
 	end
+end
+
+module RestClient
+  module Payload
+    class Base
+      def headers
+        ({'Content-Length' => size.to_s} if size) || {}
+      end
+    end
+  end
 end

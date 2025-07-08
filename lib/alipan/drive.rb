@@ -31,5 +31,20 @@ module Alipan
 
 			obj
 		end
+
+		def put_object(key, opts = {}, &block)
+			file = opts[:file]
+
+			if file
+				@protocol.put_object(resource_drive_id, key, opts) do |sw|
+					File.open(File.expand_path(file), 'rb') do |f|
+						sw << f.read(Protocol::STREAM_CHUNK_SIZE) until f.eof?
+					end
+				end
+			else
+				@protocol.put_object(resource_drive_id, key, opts, &block)
+			end
+		end
+		
 	end
 end

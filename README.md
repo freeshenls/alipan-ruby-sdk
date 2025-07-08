@@ -35,8 +35,14 @@ client = Alipan::Client.new({:access_token=>"xxx"})
 ### 获取drive
 drive = client.get_drive
 
-### 获取object
+### 获取文件列表
 objects = drive.list_objects
+
+### 获取文件
+objects = drive.get_object(key, opts = {}, &block)
+
+### 上传文件
+objects = drive.put_object(key, opts = {}, &block)
 
 ## 更多
 

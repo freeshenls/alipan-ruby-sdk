@@ -6,6 +6,8 @@ module Alipan
 	class Protocol
 		include Common::Logging
 
+		STREAM_CHUNK_SIZE = 16 * 1024
+
 		def initialize(config)
 			@config = config
 			@http = HTTP.new(config)
@@ -85,6 +87,10 @@ module Alipan
 			r = @http.post( {:sub_res => "/adrive/v1.0/openFile/get_by_path"}, {:body => payload.to_json})
 			body = JSON.parse(r.body)
 
+			if body.fetch(:code.to_s, '') == 'NotFound.File'
+				return nil
+			end
+
 			obj = Object.new(
 					:drive_id => body.fetch(:drive_id.to_s),
 					:file_id => body.fetch(:file_id.to_s),
@@ -122,5 +128,101 @@ module Alipan
 
 			obj
 		end
+
+		def put_object(drive_id, object_name, opts = {}, &block)
+			logger.debug("Begin put object, drive_id: #{drive_id}, object: "\
+                     "#{object_name}, options: #{opts}")
+
+			obj = nil
+			need_dirs = Array.new
+			parent_file_id = 'root'
+			obj_dirname = File.dirname(object_name)
+			dirname = "#{obj_dirname}".start_with?("/") ? "#{obj_dirname}" : "/#{obj_dirname}"
+
+			until dirname == '/'
+				payload = {
+					:drive_id => drive_id,
+					:file_path => dirname
+				}
+
+				r = @http.post( {:sub_res => "/adrive/v1.0/openFile/get_by_path"}, {:body => payload.to_json})
+				body = JSON.parse(r.body)
+
+				if body.fetch(:code.to_s, '') == 'NotFound.File'
+					need_dirs.unshift File.basename(dirname)
+				else
+					if body.fetch(:type.to_s) != 'folder' 
+						e = RuntimeError.new "File #{dirname} has already existed!"
+						logger.error(e.to_s)
+						raise e
+					else
+						parent_file_id = body.fetch(:file_id.to_s)
+						break
+					end
+				end
+
+				dirname = File.dirname(dirname)
+			end
+
+			need_dirs.each do |need_dir|
+				payload = {
+					:drive_id => drive_id,
+					:parent_file_id => parent_file_id,
+					:name => need_dir,
+					:type => 'folder',
+					:check_name_mode => 'refuse'
+				}
+
+				r = @http.post( {:sub_res => "/adrive/v1.0/openFile/create"}, {:body => payload.to_json})
+				body = JSON.parse(r.body)
+
+				if body.fetch(:exist.to_s) == true && body.fetch(:type.to_s) != 'folder' 
+					e = RuntimeError.new "File #{dirname} has already existed!"
+					logger.error(e.to_s)
+					raise e
+				end
+
+				parent_file_id = body.fetch(:file_id.to_s)
+			end
+
+			payload = {
+				:drive_id => drive_id,
+				:parent_file_id => parent_file_id,
+				:name => File.basename(object_name),
+				:type => 'file',
+				:check_name_mode => 'refuse'
+			}
+
+			r = @http.post( {:sub_res => "/adrive/v1.0/openFile/create"}, {:body => payload.to_json})
+			body = JSON.parse(r.body)
+
+			file_id = body.fetch(:file_id.to_s)
+			upload_id = body.fetch(:upload_id.to_s)
+
+			body.fetch('part_info_list', Array.new).each do |part|
+				payload = Alipan::Adapter.new(&block)
+
+				@http.put( {:sub_res => part.fetch(:upload_url.to_s)}, { :headers => { 'Content-Type' => '', 'Transfer-Encoding' => 'chunked' }, :body => payload })
+
+				payload = {
+					:drive_id => drive_id,
+					:file_id => file_id,
+					:upload_id => upload_id
+				}
+
+				r = @http.post( {:sub_res => "/adrive/v1.0/openFile/complete"}, {:body => payload.to_json})
+				body = JSON.parse(r.body)
+
+				obj = Object.new(
+					:drive_id => body.fetch(:drive_id.to_s),
+					:file_id => body.fetch(:file_id.to_s),
+					:size => body.fetch(:size.to_s),
+					:parent_file_id => body.fetch(:parent_file_id.to_s),
+					:name => body.fetch(:name.to_s))
+			end
+
+			obj
+		end
+
 	end
 end
