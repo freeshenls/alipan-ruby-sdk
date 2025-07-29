@@ -45,6 +45,11 @@ module Alipan
 				@protocol.put_object(resource_drive_id, key, opts, &block)
 			end
 		end
+
+
+		def delete_object(key)
+			@protocol.delete_object(resource_drive_id, key)
+		end
 		
 	end
 end

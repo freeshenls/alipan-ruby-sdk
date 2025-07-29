@@ -224,5 +224,31 @@ module Alipan
 			obj
 		end
 
+		def delete_object(drive_id, object_name)
+      logger.debug("Begin delete object, bucket: #{drive_id}, "\
+                   "object:  #{object_name}")
+
+      payload = {
+				:drive_id => drive_id,
+				:file_path => "#{object_name}".start_with?("/") ? "#{object_name}" : "/#{object_name}"
+			}
+
+			r = @http.post( {:sub_res => "/adrive/v1.0/openFile/get_by_path"}, {:body => payload.to_json})
+			body = JSON.parse(r.body)
+
+			if body.fetch(:code.to_s, '') == 'NotFound.File'
+				return
+			end
+
+      payload = {
+				:drive_id => drive_id,
+				:file_id => body.fetch(:file_id.to_s)
+			}
+
+      r = @http.post( {:sub_res => "/adrive/v1.0/openFile/delete"}, {:body => payload.to_json})
+
+      logger.debug("Done delete object")
+      end
+
 	end
 end
